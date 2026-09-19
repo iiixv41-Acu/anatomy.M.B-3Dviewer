@@ -1003,7 +1003,9 @@ function frameAll() {
   if (boundsComputed) return;
   const box = new THREE.Box3();
   let any = false;
-  scene.traverse(o => { if (o.isMesh) { box.expandByObject(o); any = true; } });
+  // 非表示のオブジェクト（筋肉・関節・神経など、初期状態でOFFのもの）は対象に含めない。
+  // 変な位置・サイズの形状が混ざっていた場合に軸がずれてしまうのを防ぐため。
+  scene.traverse(o => { if (o.isMesh && o.visible) { box.expandByObject(o); any = true; } });
   if (!any) return;
   boundsComputed = true;
   const size = box.getSize(new THREE.Vector3());
@@ -1018,10 +1020,12 @@ function frameAll() {
 function loadPart(b64, onDone) {
   const buf = b64ToBuf(b64);
   loader.parse(buf, '', (gltf) => {
-    onDone(gltf.scene);
+    try { onDone(gltf.scene); } catch (e) { console.error('loadPart processing error:', e); }
+    finally { partLoaded(); }
   }, (err) => {
     console.error(err);
-    onDone(null);
+    try { onDone(null); } catch (e) { console.error(e); }
+    finally { partLoaded(); }
   });
 }
 
@@ -1056,6 +1060,8 @@ function recolorMeshes(root, hex) {
 }
 
 let loadedParts = 0;
+// 何らかの理由で全パーツの読み込み完了を検知できなかった場合の保険（回転軸が原点に固定されたままになるのを防ぐ）
+setTimeout(() => { if (!boundsComputed) frameAll(); }, 8000);
 function partLoaded() {
   loadedParts++;
   if (loadedParts >= 5) {
@@ -1083,13 +1089,11 @@ loadPart(DATA_SKELETON, (root) => {
     });
     buildGroupUI('bone-list', boneGroups, BONE_JA, BONE_CATEGORY_ORDER, setBoneGroupVisible, orderedCompareBone);
   }
-  partLoaded();
 });
 
 // 2) 付着部
 loadPart(DATA_INSERTIONS, (root) => {
   if (root) { insertionsRoot = root; scene.add(root); recolorMeshes(root, 0xD9A441); }
-  partLoaded();
 });
 
 // 3) 筋肉
@@ -1118,7 +1122,6 @@ loadPart(DATA_MUSCLES, (root) => {
     });
     buildMuscleUI();
   }
-  partLoaded();
 });
 
 // 4) 関節（靱帯・関節包・半月板など）
@@ -1143,7 +1146,6 @@ loadPart(DATA_JOINTS, (root) => {
     });
     buildGroupUI('joint-list', jointGroups, JOINT_JA, JOINT_CATEGORY_ORDER, setJointGroupVisible, orderedCompare);
   }
-  partLoaded();
 });
 
 // 5) 神経系・感覚器官
@@ -1167,7 +1169,6 @@ loadPart(DATA_NERVES, (root) => {
     });
     buildGroupUI('nerve-list', nerveGroups, NERVE_JA, NERVE_CATEGORY_ORDER, setNerveGroupVisible, orderedCompare);
   }
-  partLoaded();
 });
 
 /* ===================== UIの構築（骨・筋肉共通） ===================== */
