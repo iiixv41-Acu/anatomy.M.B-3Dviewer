@@ -124,16 +124,19 @@
     padding: 10px 16px 8px;
     border-bottom: 1px solid var(--rule);
     flex-shrink: 0;
+    max-height: 42vh;
+    overflow-y: auto;
   }
   .preset-label {
     font-size: 0.72rem;
     color: var(--ink-soft);
     margin-bottom: 6px;
   }
+  .preset-item { margin-bottom: 5px; }
   .preset-buttons {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
   }
   .preset-btn {
     background: none;
@@ -143,8 +146,33 @@
     padding: 5px 10px;
     border-radius: 14px;
     cursor: pointer;
+    align-self: flex-start;
   }
   .preset-btn:hover { background: color-mix(in srgb, var(--accent-soft) 18%, transparent); }
+  .preset-btn.active { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+  .preset-detail {
+    margin: 6px 2px 2px;
+    padding: 4px 8px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--rule) 18%, transparent);
+  }
+  .preset-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 2px;
+    font-size: 0.78rem;
+  }
+  .preset-detail-row input { width: 13px; height: 13px; accent-color: var(--accent-soft); flex-shrink: 0; }
+  .preset-detail-tag {
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
   .tab-row {
     display: flex;
     border-bottom: 1px solid var(--rule);
@@ -305,7 +333,7 @@
       <label class="core-row"><input type="checkbox" id="toggle-insertions" checked> 筋肉の付着部（起始・停止）</label>
     </div>
     <div class="preset-wrap">
-      <div class="preset-label">臨床でよく使う組み合わせ</div>
+      <div class="preset-label">臨床でよく使う組み合わせ（もう一度押すと非表示）</div>
       <div class="preset-buttons" id="preset-buttons"></div>
     </div>
     <div class="tab-row">
@@ -485,7 +513,7 @@ function categorize(name) {
   return "その他";
 }
 const CATEGORY_ORDER = ["頭部・顔面・咀嚼筋","眼筋","頸部","体幹・脊柱（背部深層筋）","体幹（腹部・骨盤底）",
-  "肩甲帯・肩関節・上腕","前腕・手","股関節・大腿","下腿・足","その他"];
+  "肩甲帯・肩関節・上腕","前腕・手","股関節・大腿","下腿・足","その他","筋膜・支帯・腱鞘など"];
 
 /* ===================== 解剖学的な並び順（カテゴリー内） ===================== */
 const MUSCLE_ORDER = {
@@ -844,7 +872,7 @@ function categorizeJoint(name) {
   return "その他";
 }
 const JOINT_CATEGORY_ORDER = ["脊柱の靱帯・椎間板","頭頸部・顎関節","胸郭","肩・上肢（鎖骨・肩・肘・手）",
-  "骨盤・股関節","膝","下腿・足関節・足","その他"];
+  "骨盤・股関節","膝","下腿・足関節・足","その他","指・足趾の関節包"];
 const setJointGroupVisible = setMuscleGroupVisible;
 
 
@@ -953,13 +981,9 @@ loadPart(DATA_MUSCLES, (root) => {
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
-      if (isNonMuscleStructure(rawName)) {
-        // 筋膜・滑液包・腱鞘などはUIに出さず、常に非表示にする（ただし臨床プリセット用には保持）
-        child.traverse((o) => { if (o.isMesh) { o.visible = false; addToAllGroups(bn, o); } });
-        return;
-      }
+      const category = isNonMuscleStructure(rawName) ? "筋膜・支帯・腱鞘など" : categorize(bn);
       if (!muscleGroups[bn]) {
-        muscleGroups[bn] = { objects: [], category: categorize(bn), label: bn };
+        muscleGroups[bn] = { objects: [], category, label: bn };
       }
       child.traverse((o) => {
         if (o.isMesh) {
@@ -982,12 +1006,9 @@ loadPart(DATA_JOINTS, (root) => {
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
-      if (EXCLUDE_JOINT_CAPSULES.includes(rawName)) {
-        child.traverse((o) => { if (o.isMesh) { o.visible = false; addToAllGroups(bn, o); } });
-        return;
-      }
+      const category = EXCLUDE_JOINT_CAPSULES.includes(rawName) ? "指・足趾の関節包" : categorizeJoint(bn);
       if (!jointGroups[bn]) {
-        jointGroups[bn] = { objects: [], category: categorizeJoint(bn), label: bn };
+        jointGroups[bn] = { objects: [], category, label: bn };
       }
       child.traverse((o) => {
         if (o.isMesh) {
@@ -1135,27 +1156,71 @@ function clearAllSelections() {
   setAllVisibleIn('joint-list', jointGroups, false);
 }
 
-function applyPreset(preset) {
-  clearAllSelections();
-  if (skeletonRoot) skeletonRoot.visible = true;
-  document.getElementById('toggle-skeleton').checked = true;
-  if (insertionsRoot) insertionsRoot.visible = false;
-  document.getElementById('toggle-insertions').checked = false;
+function lookupJa(key) {
+  return MUSCLE_JA[key] || BONE_JA[key] || JOINT_JA[key] || null;
+}
+function lookupSourceTag(key) {
+  if (boneGroups[key]) return '骨';
+  if (muscleGroups[key]) return '筋肉';
+  if (jointGroups[key]) return '関節';
+  return '';
+}
+
+function setPresetKeysVisible(keys, visible) {
+  keys.forEach((k) => {
+    const g = ALL_GROUPS[k];
+    if (g) g.objects.forEach((o) => { o.visible = visible; });
+    document.querySelectorAll(`input[data-key="${encodeURIComponent(k)}"]`).forEach((cb) => { cb.checked = visible; });
+  });
+}
+
+function buildPresetDetail(preset, detailEl) {
+  detailEl.innerHTML = '';
   preset.keys.forEach((k) => {
     const g = ALL_GROUPS[k];
-    if (g) g.objects.forEach((o) => { o.visible = true; });
-    // 対応するチェックボックスがあれば見た目も合わせる
-    document.querySelectorAll(`input[data-key="${encodeURIComponent(k)}"]`).forEach((cb) => { cb.checked = true; });
+    const ja = lookupJa(k);
+    const row = document.createElement('label');
+    row.className = 'preset-detail-row';
+    const anyVisible = g ? g.objects.some((o) => o.visible) : false;
+    row.innerHTML = `<input type="checkbox" ${anyVisible ? 'checked' : ''}>` +
+      `<span class="preset-detail-tag">${lookupSourceTag(k)}</span>` +
+      `<span>${ja ? ja + ' / ' + k : k}</span>`;
+    const cb = row.querySelector('input');
+    cb.addEventListener('change', () => {
+      if (g) g.objects.forEach((o) => { o.visible = cb.checked; });
+      document.querySelectorAll(`input[data-key="${encodeURIComponent(k)}"]`).forEach((c) => { c.checked = cb.checked; });
+    });
+    detailEl.appendChild(row);
   });
+}
+
+function togglePreset(preset, btn, detailEl) {
+  preset.active = !preset.active;
+  btn.classList.toggle('active', preset.active);
+  setPresetKeysVisible(preset.keys, preset.active);
+  if (preset.active) {
+    buildPresetDetail(preset, detailEl);
+    detailEl.style.display = 'block';
+  } else {
+    detailEl.style.display = 'none';
+  }
 }
 
 const presetContainer = document.getElementById('preset-buttons');
 PRESETS.forEach((preset) => {
+  preset.active = false;
+  const item = document.createElement('div');
+  item.className = 'preset-item';
   const btn = document.createElement('button');
   btn.className = 'preset-btn';
   btn.textContent = preset.name;
-  btn.addEventListener('click', () => applyPreset(preset));
-  presetContainer.appendChild(btn);
+  const detail = document.createElement('div');
+  detail.className = 'preset-detail';
+  detail.style.display = 'none';
+  btn.addEventListener('click', () => togglePreset(preset, btn, detail));
+  item.appendChild(btn);
+  item.appendChild(detail);
+  presetContainer.appendChild(item);
 });
 
 document.getElementById('credit-toggle').addEventListener('click', () => {
