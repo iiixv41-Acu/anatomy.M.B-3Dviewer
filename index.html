@@ -307,6 +307,28 @@
   }
   #toggle-sidebar:hover { border-color: var(--accent); color: var(--accent); }
   body.sidebar-hidden #sidebar { display: none; }
+  #highlight-label {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    z-index: 6;
+    max-width: 70%;
+    font-size: 0.8rem;
+    color: var(--ink);
+    background: color-mix(in srgb, var(--paper-2) 92%, transparent);
+    border: 1px solid var(--rule);
+    padding: 5px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  #highlight-label .hl-tag {
+    display: inline-block;
+    font-size: 0.66rem;
+    padding: 0 5px;
+    border-radius: 3px;
+    margin-right: 6px;
+    color: #1a1a1a;
+  }
   #loading {
     position: absolute;
     inset: 0;
@@ -399,6 +421,7 @@
   <div id="viewport-wrap">
     <div id="viewport"></div>
     <button id="toggle-sidebar" type="button">一覧を隠す</button>
+    <div id="highlight-label" style="display:none;"></div>
     <div class="hint">ドラッグで回転・ホイールで拡大縮小</div>
     <div id="loading"><div>モデルを読み込み中…</div></div>
   </div>
@@ -713,9 +736,12 @@ const boneGroups = {};
 const jointGroups = {};
 const nerveGroups = {};
 const ALL_GROUPS = {}; // 骨・筋肉・関節（除外されたものも含めて全部）。臨床プリセット用の参照先
-function addToAllGroups(bn, o) {
+const MESH_INFO = new Map(); // 3Dオブジェクト -> {key, tab}（クリックで強調するために使う）
+const TAB_MATERIALS = {}; // tab名 -> 通常時の共有マテリアル（強調表示を解除するときに戻す先）
+function addToAllGroups(bn, o, tab) {
   if (!ALL_GROUPS[bn]) ALL_GROUPS[bn] = { objects: [] };
   ALL_GROUPS[bn].objects.push(o);
+  if (tab) MESH_INFO.set(o, { key: bn, tab });
 }
 let boundsComputed = false;
 
@@ -1057,6 +1083,7 @@ function recolorMeshes(root, hex) {
       ? o.material.map(() => sharedMaterial)
       : sharedMaterial;
   });
+  return sharedMaterial;
 }
 
 let loadedParts = 0;
@@ -1076,7 +1103,7 @@ loadPart(DATA_SKELETON, (root) => {
   if (root) {
     skeletonRoot = root;
     scene.add(root);
-    recolorMeshes(root, 0xF0E9D8);
+    TAB_MATERIALS.bone = recolorMeshes(root, 0xF0E9D8);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1084,7 +1111,7 @@ loadPart(DATA_SKELETON, (root) => {
         boneGroups[bn] = { objects: [], category: categorizeBone(bn), label: bn };
       }
       child.traverse((o) => {
-        if (o.isMesh) { boneGroups[bn].objects.push(o); addToAllGroups(bn, o); } // 初期状態: 全て表示（骨格そのままの状態）
+        if (o.isMesh) { boneGroups[bn].objects.push(o); addToAllGroups(bn, o, 'bone'); } // 初期状態: 全て表示（骨格そのままの状態）
       });
     });
     buildGroupUI('bone-list', boneGroups, BONE_JA, BONE_CATEGORY_ORDER, setBoneGroupVisible, orderedCompareBone);
@@ -1100,7 +1127,7 @@ loadPart(DATA_INSERTIONS, (root) => {
 loadPart(DATA_MUSCLES, (root) => {
   if (root) {
     scene.add(root);
-    recolorMeshes(root, 0xA23B2E);
+    TAB_MATERIALS.muscle = recolorMeshes(root, 0xA23B2E);
     // トップレベルの各オブジェクト（＝Blenderでの1つの筋肉オブジェクト）ごとに、
     // その名前を使って配下のメッシュ（複数マテリアルで分割されている場合を含む）をまとめる。
     // three.jsはアニメーション用にnode.nameのスペース/ピリオドを内部的に置換するため、
@@ -1116,7 +1143,7 @@ loadPart(DATA_MUSCLES, (root) => {
         if (o.isMesh) {
           muscleGroups[bn].objects.push(o);
           o.visible = false; // 初期状態: 全て非表示
-          addToAllGroups(bn, o);
+          addToAllGroups(bn, o, 'muscle');
         }
       });
     });
@@ -1128,7 +1155,7 @@ loadPart(DATA_MUSCLES, (root) => {
 loadPart(DATA_JOINTS, (root) => {
   if (root) {
     scene.add(root);
-    recolorMeshes(root, 0xC9A24B);
+    TAB_MATERIALS.joint = recolorMeshes(root, 0xC9A24B);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1140,7 +1167,7 @@ loadPart(DATA_JOINTS, (root) => {
         if (o.isMesh) {
           jointGroups[bn].objects.push(o);
           o.visible = false; // 初期状態: 全て非表示
-          addToAllGroups(bn, o);
+          addToAllGroups(bn, o, 'joint');
         }
       });
     });
@@ -1152,7 +1179,7 @@ loadPart(DATA_JOINTS, (root) => {
 loadPart(DATA_NERVES, (root) => {
   if (root) {
     scene.add(root);
-    recolorMeshes(root, 0xE0C43C);
+    TAB_MATERIALS.nerve = recolorMeshes(root, 0xE0C43C);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1163,7 +1190,7 @@ loadPart(DATA_NERVES, (root) => {
         if (o.isMesh) {
           nerveGroups[bn].objects.push(o);
           o.visible = false; // 初期状態: 全て非表示
-          addToAllGroups(bn, o);
+          addToAllGroups(bn, o, 'nerve');
         }
       });
     });
@@ -1386,6 +1413,11 @@ document.getElementById('preset-toggle-label').addEventListener('click', () => {
 document.getElementById('toggle-sidebar').addEventListener('click', (e) => {
   const hidden = document.body.classList.toggle('sidebar-hidden');
   e.target.textContent = hidden ? '一覧を表示' : '一覧を隠す';
+  // 一覧を隠している間にクリックして強調していた項目があれば、
+  // 一覧を表示し直したタイミングで、そこを開いてスクロールする
+  if (!hidden && lastHighlightedForReveal) {
+    revealInSidebar(lastHighlightedForReveal.key, lastHighlightedForReveal.tab);
+  }
   // レイアウトが変わった直後にリサイズしないと3Dビューのサイズがずれるため、
   // 描画エンジンにレイアウト確定後のサイズを再取得させる
   requestAnimationFrame(() => requestAnimationFrame(resize));
@@ -1394,6 +1426,132 @@ document.getElementById('toggle-sidebar').addEventListener('click', (e) => {
 document.getElementById('credit-toggle').addEventListener('click', () => {
   const d = document.getElementById('credit-detail');
   d.style.display = d.style.display === 'none' ? 'block' : 'none';
+});
+
+/* ===================== クリックで部位を強調表示 ===================== */
+const HIGHLIGHT_COLORS = { bone: 0x66D9FF, muscle: 0xC6F24E, joint: 0xB57BFF, nerve: 0x1E3FBF };
+const HIGHLIGHT_MATERIALS = {};
+Object.keys(HIGHLIGHT_COLORS).forEach((tab) => {
+  HIGHLIGHT_MATERIALS[tab] = new THREE.MeshStandardMaterial({
+    color: HIGHLIGHT_COLORS[tab],
+    emissive: HIGHLIGHT_COLORS[tab],
+    emissiveIntensity: 0.55,
+    roughness: 0.35,
+  });
+});
+const TAB_LABELS = { bone: '骨', muscle: '筋肉', joint: '関節', nerve: '神経' };
+
+const highlightedSet = new Map(); // "tab:key" -> {key, tab}（複数同時に強調できるようにする）
+let lastHighlightedForReveal = null; // 一覧を後から表示したときに開く対象（直近で強調したもの）
+
+function restoreOne(key, tab) {
+  const g = ALL_GROUPS[key];
+  const mat = TAB_MATERIALS[tab];
+  if (g && mat) g.objects.forEach((o) => { o.material = mat; });
+}
+
+function updateHighlightLabel() {
+  const label = document.getElementById('highlight-label');
+  if (highlightedSet.size === 0) {
+    label.style.display = 'none';
+    label.innerHTML = '';
+    return;
+  }
+  const rows = [];
+  highlightedSet.forEach(({ key, tab }) => {
+    const ja = lookupJa(key);
+    const hex = '#' + HIGHLIGHT_COLORS[tab].toString(16).padStart(6, '0');
+    rows.push(`<div><span class="hl-tag" style="background:${hex}">${TAB_LABELS[tab]}</span>${ja ? ja + ' / ' + key : key}</div>`);
+  });
+  label.innerHTML = rows.join('');
+  label.style.display = 'block';
+}
+
+function clearHighlight() {
+  // 全ての強調表示を解除する（何もない場所をクリック／Escキー用）
+  highlightedSet.forEach(({ key, tab }) => restoreOne(key, tab));
+  highlightedSet.clear();
+  lastHighlightedForReveal = null;
+  updateHighlightLabel();
+}
+
+function revealInSidebar(key, tab) {
+  const tabBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (tabBtn && !tabBtn.classList.contains('active')) tabBtn.click();
+  const cb = document.querySelector(`#${tab}-list input[data-key="${encodeURIComponent(key)}"]`);
+  if (!cb) return;
+  const row = cb.closest('.item');
+  const catEl = cb.closest('.category');
+  if (catEl) catEl.classList.add('open');
+  if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function toggleHighlight(key, tab) {
+  const id = tab + ':' + key;
+  if (highlightedSet.has(id)) {
+    // すでに強調中の部位を再度クリック → 強調をやめて、その部位自体を非表示にする
+    restoreOne(key, tab);
+    const g = ALL_GROUPS[key];
+    if (g) g.objects.forEach((o) => { o.visible = false; });
+    document.querySelectorAll(`input[data-key="${encodeURIComponent(key)}"]`).forEach((cb) => { cb.checked = false; });
+    highlightedSet.delete(id);
+    if (lastHighlightedForReveal && lastHighlightedForReveal.key === key && lastHighlightedForReveal.tab === tab) {
+      lastHighlightedForReveal = null;
+    }
+    updateHighlightLabel();
+    return;
+  }
+  const g = ALL_GROUPS[key];
+  const hlMat = HIGHLIGHT_MATERIALS[tab];
+  if (!g || !hlMat) return;
+  g.objects.forEach((o) => { o.material = hlMat; });
+  highlightedSet.set(id, { key, tab });
+  lastHighlightedForReveal = { key, tab };
+  updateHighlightLabel();
+
+  // 一覧が表示されているときだけ、対応するタブ・カテゴリーを開いて該当行までスクロールする
+  // （一覧を隠している間は、強調表示だけ行い一覧は開かない）
+  if (!document.body.classList.contains('sidebar-hidden')) {
+    revealInSidebar(key, tab);
+  }
+}
+
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+let clickStartPos = null;
+let clickStartTime = 0;
+
+viewportEl.addEventListener('pointerdown', (e) => {
+  clickStartPos = { x: e.clientX, y: e.clientY };
+  clickStartTime = performance.now();
+});
+
+viewportEl.addEventListener('pointerup', (e) => {
+  if (!clickStartPos) return;
+  const dx = e.clientX - clickStartPos.x;
+  const dy = e.clientY - clickStartPos.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const dt = performance.now() - clickStartTime;
+  clickStartPos = null;
+  if (dist > 6 || dt > 600) return; // 回転・移動のドラッグ操作はクリックとして扱わない
+
+  const rect = viewportEl.getBoundingClientRect();
+  pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(scene.children, true);
+  // 非表示のオブジェクトも交差判定には引っかかってしまうため、visibleなものだけを対象にする
+  const hit = hits.find((h) => h.object.visible && MESH_INFO.has(h.object));
+  if (!hit) {
+    clearHighlight(); // 何もない場所をクリック → 全ての強調を解除（非表示にはしない）
+    return;
+  }
+  const info = MESH_INFO.get(hit.object);
+  toggleHighlight(info.key, info.tab);
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') clearHighlight();
 });
 
 /* ===================== 骨／筋肉／関節タブの切り替え ===================== */
