@@ -292,6 +292,21 @@
     border-radius: 3px;
     pointer-events: none;
   }
+  #toggle-sidebar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 6;
+    background: color-mix(in srgb, var(--paper-2) 88%, transparent);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    font-size: 0.76rem;
+    padding: 6px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+  }
+  #toggle-sidebar:hover { border-color: var(--accent); color: var(--accent); }
+  body.sidebar-hidden #sidebar { display: none; }
   #loading {
     position: absolute;
     inset: 0;
@@ -383,6 +398,7 @@
 
   <div id="viewport-wrap">
     <div id="viewport"></div>
+    <button id="toggle-sidebar" type="button">一覧を隠す</button>
     <div class="hint">ドラッグで回転・ホイールで拡大縮小</div>
     <div id="loading"><div>モデルを読み込み中…</div></div>
   </div>
@@ -1361,6 +1377,14 @@ document.getElementById('preset-toggle-label').addEventListener('click', () => {
   const open = presetContainer.style.display !== 'none';
   presetContainer.style.display = open ? 'none' : 'flex';
   wrap.classList.toggle('open', !open);
+});
+
+document.getElementById('toggle-sidebar').addEventListener('click', (e) => {
+  const hidden = document.body.classList.toggle('sidebar-hidden');
+  e.target.textContent = hidden ? '一覧を表示' : '一覧を隠す';
+  // レイアウトが変わった直後にリサイズしないと3Dビューのサイズがずれるため、
+  // 描画エンジンにレイアウト確定後のサイズを再取得させる
+  requestAnimationFrame(() => requestAnimationFrame(resize));
 });
 
 document.getElementById('credit-toggle').addEventListener('click', () => {
