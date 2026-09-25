@@ -143,6 +143,7 @@
     display: inline-block;
   }
   .preset-wrap.open .preset-arrow { transform: rotate(90deg); }
+  .core-toggles.open .preset-arrow { transform: rotate(90deg); }
   .preset-item { margin-bottom: 5px; }
   .preset-buttons {
     display: flex;
@@ -377,8 +378,11 @@
 <div class="layout">
   <div id="sidebar">
     <div class="core-toggles">
-      <label class="core-row"><input type="checkbox" id="toggle-skeleton" checked> 骨格（全体）</label>
-      <label class="core-row"><input type="checkbox" id="toggle-insertions" checked> 筋肉の付着部（起始・停止）</label>
+      <div class="preset-label" id="core-toggle-label"><span class="preset-arrow">▶</span>骨格（全体）／筋肉の付着部</div>
+      <div id="core-toggle-body" style="display:none;">
+        <label class="core-row"><input type="checkbox" id="toggle-skeleton" checked> 骨格（全体）</label>
+        <label class="core-row"><input type="checkbox" id="toggle-insertions" checked> 筋肉の付着部（起始・停止）</label>
+      </div>
     </div>
     <div class="preset-wrap">
       <div class="preset-label" id="preset-toggle-label"><span class="preset-arrow">▶</span>臨床でよく使う組み合わせ（もう一度押すと非表示）</div>
@@ -1327,6 +1331,9 @@ const PRESETS = [
     "Tibialis posterior muscle","Flexor digitorum longus","Flexor hallucis longus","Tibial nerve"] },
   { name: "胸郭出口（斜角筋三角）", keys: ["Scalenus anterior muscle","Scalenus medius muscle","Clavicle","First rib",
     "Roots of brachial plexus","Superior trunk of brachial plexus","Middle trunk of brachial plexus","Inferior trunk of brachial plexus"] },
+  { name: "頭蓋骨：単一の骨（7個）", keys: ["Frontal bone","Sphenoid bone","Ethmoid bone","Occipital bone","Vomer","Mandible","Hyoid bone"] },
+  { name: "頭蓋骨：対になる骨（8組16個）", keys: ["Parietal bone","Temporal bone","Zygomatic bone","Maxilla","Palatine bone",
+    "Lacrimal bone","Nasal bone","Inferior nasal concha bone"] },
 ];
 
 function clearAllSelections() {
@@ -1407,6 +1414,14 @@ document.getElementById('preset-toggle-label').addEventListener('click', () => {
   const wrap = document.querySelector('.preset-wrap');
   const open = presetContainer.style.display !== 'none';
   presetContainer.style.display = open ? 'none' : 'flex';
+  wrap.classList.toggle('open', !open);
+});
+
+document.getElementById('core-toggle-label').addEventListener('click', () => {
+  const body = document.getElementById('core-toggle-body');
+  const wrap = document.querySelector('.core-toggles');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
   wrap.classList.toggle('open', !open);
 });
 
