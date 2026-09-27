@@ -1345,8 +1345,8 @@ const PRESETS = [
     "Tibialis posterior muscle","Flexor digitorum longus","Flexor hallucis longus","Tibial nerve"] },
   { name: "胸郭出口（斜角筋三角）", keys: ["Scalenus anterior muscle","Scalenus medius muscle","Clavicle","First rib",
     "Roots of brachial plexus","Superior trunk of brachial plexus","Middle trunk of brachial plexus","Inferior trunk of brachial plexus"] },
-  { name: "頭蓋骨：単一の骨（7個）", keys: ["Frontal bone","Sphenoid bone","Ethmoid bone","Occipital bone","Vomer","Mandible","Hyoid bone"] },
-  { name: "頭蓋骨：対になる骨（8組16個）", keys: ["Parietal bone","Temporal bone","Zygomatic bone","Maxilla","Palatine bone",
+  { name: "頭蓋骨：単一の骨（7個）", highlightMode: true, keys: ["Frontal bone","Sphenoid bone","Ethmoid bone","Occipital bone","Vomer","Mandible","Hyoid bone"] },
+  { name: "頭蓋骨：対になる骨（8組16個）", highlightMode: true, keys: ["Parietal bone","Temporal bone","Zygomatic bone","Maxilla","Palatine bone",
     "Lacrimal bone","Nasal bone","Inferior nasal concha bone"] },
 ];
 
@@ -1375,6 +1375,29 @@ function setPresetKeysVisible(keys, visible) {
   });
 }
 
+function setHighlightForKeys(keys, tab, on) {
+  if (on && skeletonRoot) {
+    // 骨格全体が非表示だと強調しても見えないため、必要なら表示しておく
+    skeletonRoot.visible = true;
+    document.getElementById('toggle-skeleton').checked = true;
+  }
+  keys.forEach((k) => {
+    const id = tab + ':' + k;
+    const isOn = highlightedSet.has(id);
+    if (on && !isOn) {
+      const g = ALL_GROUPS[k];
+      const hlMat = HIGHLIGHT_MATERIALS[tab];
+      if (g && hlMat) g.objects.forEach((o) => { o.visible = true; o.material = hlMat; });
+      highlightedSet.set(id, { key: k, tab });
+      lastHighlightedForReveal = { key: k, tab };
+    } else if (!on && isOn) {
+      restoreOne(k, tab);
+      highlightedSet.delete(id);
+    }
+  });
+  updateHighlightLabel();
+}
+
 function buildPresetDetail(preset, detailEl) {
   detailEl.innerHTML = '';
   preset.keys.forEach((k) => {
@@ -1382,14 +1405,20 @@ function buildPresetDetail(preset, detailEl) {
     const ja = lookupJa(k);
     const row = document.createElement('label');
     row.className = 'preset-detail-row';
-    const anyVisible = g ? g.objects.some((o) => o.visible) : false;
-    row.innerHTML = `<input type="checkbox" ${anyVisible ? 'checked' : ''}>` +
+    const isChecked = preset.highlightMode
+      ? highlightedSet.has('bone:' + k)
+      : (g ? g.objects.some((o) => o.visible) : false);
+    row.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''}>` +
       `<span class="preset-detail-tag">${lookupSourceTag(k)}</span>` +
       `<span>${ja ? ja + ' / ' + k : k}</span>`;
     const cb = row.querySelector('input');
     cb.addEventListener('change', () => {
-      if (g) g.objects.forEach((o) => { o.visible = cb.checked; });
-      document.querySelectorAll(`input[data-key="${encodeURIComponent(k)}"]`).forEach((c) => { c.checked = cb.checked; });
+      if (preset.highlightMode) {
+        setHighlightForKeys([k], 'bone', cb.checked);
+      } else {
+        if (g) g.objects.forEach((o) => { o.visible = cb.checked; });
+        document.querySelectorAll(`input[data-key="${encodeURIComponent(k)}"]`).forEach((c) => { c.checked = cb.checked; });
+      }
     });
     detailEl.appendChild(row);
   });
@@ -1398,7 +1427,11 @@ function buildPresetDetail(preset, detailEl) {
 function togglePreset(preset, btn, detailEl, foldBtn) {
   preset.active = !preset.active;
   btn.classList.toggle('active', preset.active);
-  setPresetKeysVisible(preset.keys, preset.active);
+  if (preset.highlightMode) {
+    setHighlightForKeys(preset.keys, 'bone', preset.active);
+  } else {
+    setPresetKeysVisible(preset.keys, preset.active);
+  }
   if (preset.active) {
     preset.detailOpen = true;
     buildPresetDetail(preset, detailEl);
