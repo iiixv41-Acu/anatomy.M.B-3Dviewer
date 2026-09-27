@@ -162,6 +162,20 @@
   }
   .preset-btn:hover { background: color-mix(in srgb, var(--accent-soft) 18%, transparent); }
   .preset-btn.active { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+  .preset-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .preset-fold-btn {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    cursor: pointer;
+  }
+  .preset-fold-btn:hover { color: var(--accent); }
   .preset-detail {
     margin: 6px 2px 2px;
     padding: 4px 8px;
@@ -385,7 +399,7 @@
       </div>
     </div>
     <div class="preset-wrap">
-      <div class="preset-label" id="preset-toggle-label"><span class="preset-arrow">▶</span>臨床でよく使う組み合わせ（もう一度押すと非表示）</div>
+      <div class="preset-label" id="preset-toggle-label"><span class="preset-arrow">▶</span>よく使う組み合わせ（もう一度押すと非表示）</div>
       <div class="preset-buttons" id="preset-buttons" style="display:none;"></div>
     </div>
     <div class="tab-row">
@@ -1381,31 +1395,53 @@ function buildPresetDetail(preset, detailEl) {
   });
 }
 
-function togglePreset(preset, btn, detailEl) {
+function togglePreset(preset, btn, detailEl, foldBtn) {
   preset.active = !preset.active;
   btn.classList.toggle('active', preset.active);
   setPresetKeysVisible(preset.keys, preset.active);
   if (preset.active) {
+    preset.detailOpen = true;
     buildPresetDetail(preset, detailEl);
     detailEl.style.display = 'block';
+    foldBtn.style.display = 'inline-block';
+    foldBtn.textContent = '▼';
   } else {
     detailEl.style.display = 'none';
+    foldBtn.style.display = 'none';
   }
+}
+
+function toggleFold(preset, detailEl, foldBtn) {
+  if (!preset.active) return; // 表示していないものは畳む対象がない
+  preset.detailOpen = !preset.detailOpen;
+  detailEl.style.display = preset.detailOpen ? 'block' : 'none';
+  foldBtn.textContent = preset.detailOpen ? '▼' : '▶';
 }
 
 const presetContainer = document.getElementById('preset-buttons');
 PRESETS.forEach((preset) => {
   preset.active = false;
+  preset.detailOpen = true;
   const item = document.createElement('div');
   item.className = 'preset-item';
+  const row = document.createElement('div');
+  row.className = 'preset-row';
   const btn = document.createElement('button');
   btn.className = 'preset-btn';
   btn.textContent = preset.name;
+  const foldBtn = document.createElement('button');
+  foldBtn.className = 'preset-fold-btn';
+  foldBtn.textContent = '▼';
+  foldBtn.style.display = 'none';
+  foldBtn.title = '一覧の開閉（表示のオン/オフはそのまま）';
   const detail = document.createElement('div');
   detail.className = 'preset-detail';
   detail.style.display = 'none';
-  btn.addEventListener('click', () => togglePreset(preset, btn, detail));
-  item.appendChild(btn);
+  btn.addEventListener('click', () => togglePreset(preset, btn, detail, foldBtn));
+  foldBtn.addEventListener('click', () => toggleFold(preset, detail, foldBtn));
+  row.appendChild(btn);
+  row.appendChild(foldBtn);
+  item.appendChild(row);
   item.appendChild(detail);
   presetContainer.appendChild(item);
 });
