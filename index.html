@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>解剖3Dビューア</title>
+<title>解剖3Dビューア（Unity素材版）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&display=swap" rel="stylesheet">
@@ -722,6 +722,7 @@ function resize() {
   camera.aspect = viewportEl.clientWidth / viewportEl.clientHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(viewportEl.clientWidth, viewportEl.clientHeight);
+  if (window.updateOutlineResolution) window.updateOutlineResolution();
 }
 window.addEventListener('resize', resize);
 
@@ -1083,6 +1084,35 @@ function isNonMuscleStructure(name) {
   return NON_MUSCLE_KEYWORDS.some((k) => n.includes(k));
 }
 
+
+/* ===================== Unityアプリの素材設定（色・金属感・なめらかさ・透明度） ===================== */
+const UNITY_MATS = {"bone 1": [0.89, 0.855, 0.788, 1.0, 0.25, 0.35], "bone 2": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone 3": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone 4": [0.89, 0.855, 0.788, 1.0, 0.25, 0.35], "bone 5": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone 6": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone 7": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone 8": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "bone": [0.953, 0.953, 0.953, 1.0, 0.25, 0.35], "cartilage": [0.83, 0.937, 0.962, 1.0, 0.0, 0.65], "dentine": [0.906, 0.676, 0.448, 1.0, 0.0, 0.5], "suture 1": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 2": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 3": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 4": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 5": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 6": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 7": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture 8": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "suture": [0.906, 0.906, 0.906, 1.0, 0.0, 0.5], "teeth": [1.0, 0.972, 0.92, 1.0, 0.0, 0.6], "teethroot": [0.981, 0.914, 0.81, 1.0, 0.0, 0.5], "end abduction": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end adduction 1": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end biarticular": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end depressor": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end extension fingers": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end extension hand foot": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end extension": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end external rotation": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end flexion fingers": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end flexion hand foot": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end flexion": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end internal rotation": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end levator": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "end mastication": [0.376, 0.627, 0.678, 1.0, 0.0, 0.0], "muscular ending": [0.375, 0.627, 0.679, 1.0, 0.0, 0.0], "muscular origin": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin mastication": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin abduction": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin adduction": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin biarticular": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin depressor": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin diaphragm": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin extension fingers": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin extension hand foot": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin extension": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin external rotation": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin flexion fingers": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin flexion hand foot": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin flexion": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin internal rotation": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin levator": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin ligament": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin orbicular constrictor": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "origin superficial": [1.0, 0.435, 0.354, 1.0, 0.0, 0.0], "abductor": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "adductor": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "articular capsule": [0.853, 0.741, 1.0, 1.0, 0.0, 0.5], "biarticular": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "bursa": [0.467, 0.856, 0.945, 0.59, 0.35, 0.45], "depressor": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "diaphragm": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "extension hand foot": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "extension": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "extensor extremities": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "external rotation": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "fascia": [0.789, 0.909, 0.915, 0.33, 0.0, 0.5], "flexion fingers": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "flexion hand foot": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "flexion": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "ingestion": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "internal rotator": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "levator": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "ligament": [0.873, 0.936, 1.0, 1.0, 0.0, 0.3], "maticator": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "muscles": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "orbicularis constrictor": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "phonation": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "superficial": [0.943, 0.578, 0.467, 1.0, 0.35, 0.45], "tendon": [0.614, 0.726, 0.736, 1.0, 0.0, 0.96], "trapezius": [1.0, 0.387, 0.203, 1.0, 0.1, 0.5], "fat": [1.0, 0.902, 0.588, 1.0, 0.0, 0.5], "artery": [1.0, 0.514, 0.526, 1.0, 0.1, 0.8], "brain inner": [0.745, 0.683, 0.629, 1.0, 0.0, 0.5], "brain": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "cerebellum": [0.858, 0.542, 0.498, 1.0, 0.0, 0.5], "cornea": [0.075, 0.075, 0.075, 0.35, 0.0, 0.5], "eye": [0.857, 0.879, 0.896, 1.0, 0.0, 0.96], "frontal lobe": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "gland": [1.0, 0.693, 0.447, 1.0, 0.0, 0.55], "insula": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "interlobar sulci": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "iris": [0.443, 0.304, 0.145, 1.0, 0.0, 0.7], "lcr": [0.635, 0.698, 0.804, 1.0, 0.0, 0.8], "limbic lobe": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "mucosa": [0.953, 0.633, 0.67, 1.0, 0.05, 0.85], "nerve 1": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 2": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 3": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 4": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 5": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 6": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve 7": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nerve": [0.878, 0.769, 0.235, 1.0, 0.0, 0.6], "nucleus afferent": [0.733, 0.439, 0.212, 1.0, 0.0, 0.5], "nucleus efferent 1": [0.733, 0.439, 0.212, 1.0, 0.0, 0.5], "nucleus": [0.733, 0.439, 0.212, 1.0, 0.0, 0.5], "occipital lobe": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "parietal lobe": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "temporal lobe": [1.0, 0.675, 0.709, 1.0, 0.0, 0.65], "white matter": [0.953, 0.944, 0.885, 1.0, 0.0, 0.7]};
+function unityNorm(n) { return (n || '').toLowerCase().replace(/\.\d+$/, '').replace(/[-\/_\s]+/g, ' ').trim(); }
+function applyUnityStyle(mat, fallbackHex) {
+  if (!mat) return;
+  if (mat.emissive) mat.emissive.setRGB(0, 0, 0);
+  const k = unityNorm(mat.name);
+  const u = UNITY_MATS[k] || UNITY_MATS[k + ' 1'];
+  if (u) {
+    mat.color.setRGB(u[0], u[1], u[2]);
+    mat.metalness = u[4];
+    mat.roughness = Math.min(1, Math.max(0.04, 1 - u[5]));
+    if (u[3] < 0.999) { mat.transparent = true; mat.opacity = u[3]; mat.depthWrite = false; }
+  } else {
+    mat.color.set(fallbackHex);   // 対応する設定が無いものは、従来の1色で表示
+    mat.roughness = 0.62; mat.metalness = 0.04;
+  }
+  mat.needsUpdate = true;
+}
+function styleMeshes(root, fallbackHex) {
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    if (o.geometry && o.geometry.isBufferGeometry) { try { o.geometry.computeVertexNormals(); } catch (e) { /* noop */ } }
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => applyUnityStyle(m, fallbackHex));
+    o.userData.origMaterial = o.material; // 強調を解除したとき元の素材へ戻す
+  });
+  return null;
+}
 function recolorMeshes(root, hex) {
   // 複製ではなく、単色のマテリアルを新規に作って丸ごと置き換える
   // （元のマテリアルの特殊設定に左右されず、確実に色を統一するため）
@@ -1121,7 +1151,7 @@ loadPart(DATA_SKELETON, (root) => {
   if (root) {
     skeletonRoot = root;
     scene.add(root);
-    TAB_MATERIALS.bone = recolorMeshes(root, 0xF0E9D8);
+    TAB_MATERIALS.bone = styleMeshes(root, 0xF0E9D8);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1138,14 +1168,14 @@ loadPart(DATA_SKELETON, (root) => {
 
 // 2) 付着部
 loadPart(DATA_INSERTIONS, (root) => {
-  if (root) { insertionsRoot = root; scene.add(root); recolorMeshes(root, 0xD9A441); }
+  if (root) { insertionsRoot = root; scene.add(root); styleMeshes(root, 0xD9A441); }
 });
 
 // 3) 筋肉
 loadPart(DATA_MUSCLES, (root) => {
   if (root) {
     scene.add(root);
-    TAB_MATERIALS.muscle = recolorMeshes(root, 0xA23B2E);
+    TAB_MATERIALS.muscle = styleMeshes(root, 0xA23B2E);
     // トップレベルの各オブジェクト（＝Blenderでの1つの筋肉オブジェクト）ごとに、
     // その名前を使って配下のメッシュ（複数マテリアルで分割されている場合を含む）をまとめる。
     // three.jsはアニメーション用にnode.nameのスペース/ピリオドを内部的に置換するため、
@@ -1173,7 +1203,7 @@ loadPart(DATA_MUSCLES, (root) => {
 loadPart(DATA_JOINTS, (root) => {
   if (root) {
     scene.add(root);
-    TAB_MATERIALS.joint = recolorMeshes(root, 0xC9A24B);
+    TAB_MATERIALS.joint = styleMeshes(root, 0xC9A24B);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1197,7 +1227,7 @@ loadPart(DATA_JOINTS, (root) => {
 loadPart(DATA_NERVES, (root) => {
   if (root) {
     scene.add(root);
-    TAB_MATERIALS.nerve = recolorMeshes(root, 0xE0C43C);
+    TAB_MATERIALS.nerve = styleMeshes(root, 0xE0C43C);
     root.children.forEach((child) => {
       const rawName = (child.userData && child.userData.name) || child.name || 'unnamed';
       const bn = baseName(rawName);
@@ -1387,7 +1417,7 @@ function setHighlightForKeys(keys, tab, on) {
     if (on && !isOn) {
       const g = ALL_GROUPS[k];
       const hlMat = HIGHLIGHT_MATERIALS[tab];
-      if (g && hlMat) g.objects.forEach((o) => { o.visible = true; o.material = hlMat; });
+      if (g && hlMat) g.objects.forEach((o) => { o.visible = true; addOutline(o, tab); });
       highlightedSet.set(id, { key: k, tab });
       lastHighlightedForReveal = { key: k, tab };
     } else if (!on && isOn) {
@@ -1514,15 +1544,47 @@ document.getElementById('credit-toggle').addEventListener('click', () => {
 
 /* ===================== クリックで部位を強調表示 ===================== */
 const HIGHLIGHT_COLORS = { bone: 0x66D9FF, muscle: 0xC6F24E, joint: 0xB57BFF, nerve: 0x1E3FBF };
-const HIGHLIGHT_MATERIALS = {};
-Object.keys(HIGHLIGHT_COLORS).forEach((tab) => {
-  HIGHLIGHT_MATERIALS[tab] = new THREE.MeshStandardMaterial({
-    color: HIGHLIGHT_COLORS[tab],
-    emissive: HIGHLIGHT_COLORS[tab],
-    emissiveIntensity: 0.55,
-    roughness: 0.35,
+const HIGHLIGHT_MATERIALS = {}; // 強調用の輪郭線マテリアル（色は系統ごと）
+const OUTLINE_PX = 3; // 輪郭線の太さ（画面上のピクセル数。拡大縮小しても一定）
+function makeOutlineMaterial(hex) {
+  return new THREE.ShaderMaterial({
+    uniforms: { color: { value: new THREE.Color(hex) }, thickness: { value: OUTLINE_PX }, resolution: { value: new THREE.Vector2(800, 600) } },
+    vertexShader: [
+      'uniform float thickness; uniform vec2 resolution;',
+      'void main() {',
+      '  vec4 clipPos = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+      '  vec2 dir = (projectionMatrix * vec4(normalMatrix * normal, 0.0)).xy;',
+      '  float len = length(dir);',
+      '  if (len > 1e-5) dir /= len;',
+      '  clipPos.xy += dir * (thickness * 2.0 / resolution) * clipPos.w;',
+      '  gl_Position = clipPos;',
+      '}'].join('\n'),
+    fragmentShader: 'uniform vec3 color; void main() { gl_FragColor = vec4(color, 1.0); }',
+    side: THREE.BackSide,
   });
-});
+}
+Object.keys(HIGHLIGHT_COLORS).forEach((tab) => { HIGHLIGHT_MATERIALS[tab] = makeOutlineMaterial(HIGHLIGHT_COLORS[tab]); });
+window.updateOutlineResolution = function () {
+  const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const pr = renderer.getPixelRatio();
+  Object.keys(HIGHLIGHT_MATERIALS).forEach((t) => {
+    HIGHLIGHT_MATERIALS[t].uniforms.resolution.value.copy(size);
+    HIGHLIGHT_MATERIALS[t].uniforms.thickness.value = OUTLINE_PX * pr;
+  });
+};
+window.updateOutlineResolution();
+function addOutline(o, tab) {
+  if (o.userData.outline) return;
+  const m = new THREE.Mesh(o.geometry, HIGHLIGHT_MATERIALS[tab]);
+  m.raycast = function () {}; // クリック判定は元の部位だけで行う
+  m.userData.isOutline = true;
+  o.add(m);
+  o.userData.outline = m;
+}
+function removeOutline(o) {
+  const m = o.userData.outline;
+  if (m) { o.remove(m); o.userData.outline = null; }
+}
 const TAB_LABELS = { bone: '骨', muscle: '筋肉', joint: '関節', nerve: '神経' };
 
 const highlightedSet = new Map(); // "tab:key" -> {key, tab}（複数同時に強調できるようにする）
@@ -1530,8 +1592,7 @@ let lastHighlightedForReveal = null; // 一覧を後から表示したときに�
 
 function restoreOne(key, tab) {
   const g = ALL_GROUPS[key];
-  const mat = TAB_MATERIALS[tab];
-  if (g && mat) g.objects.forEach((o) => { o.material = mat; });
+  if (g) g.objects.forEach((o) => removeOutline(o));
 }
 
 function updateHighlightLabel() {
@@ -1588,7 +1649,7 @@ function toggleHighlight(key, tab) {
   const g = ALL_GROUPS[key];
   const hlMat = HIGHLIGHT_MATERIALS[tab];
   if (!g || !hlMat) return;
-  g.objects.forEach((o) => { o.material = hlMat; });
+  g.objects.forEach((o) => addOutline(o, tab));
   highlightedSet.set(id, { key, tab });
   lastHighlightedForReveal = { key, tab };
   updateHighlightLabel();
